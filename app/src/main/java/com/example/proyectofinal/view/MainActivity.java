@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity {
                         showToast("Email incorrecto");
                         return;
                     }
-                    if (!Validaciones.controlarPassword(pass)) {
+                    if (!Validaciones.controlarPasword(pass)) {
                         showToast("Password incorrecto");
                         return;
                     }

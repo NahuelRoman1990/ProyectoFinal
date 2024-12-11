@@ -1,5 +1,6 @@
 package com.example.proyectofinal.adapters;
 
+
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,9 +19,12 @@ import java.util.List;
 
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
     private List<Post> posts;
+    private OnPostClickListener listener; // Listener para manejar el click
 
-    public PostAdapter(List<Post> posts) {
+    // Constructor con el listener
+    public PostAdapter(List<Post> posts, OnPostClickListener listener) {
         this.posts = posts;
+        this.listener = listener;
     }
 
     @NonNull
@@ -56,18 +60,26 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         .load(imagenes.get(i))
                         .fit()
                         .centerCrop()
+                        .error(R.drawable.uploadimg)
                         .into(imageViews[i]);
                 imageViews[i].setVisibility(View.VISIBLE);
+
+                // Añadir un OnClickListener a cada imagen
+                final int index = i; // Para capturar el índice de la imagen
+                imageViews[i].setOnClickListener(v -> {
+                    // Llamar al listener para pasar el post seleccionado
+                    listener.onPostClick(post, index);
+                });
             }
         }
     }
-
 
     @Override
     public int getItemCount() {
         return posts.size();
     }
 
+    // ViewHolder para manejar las vistas
     public static class PostViewHolder extends RecyclerView.ViewHolder {
         TextView tvTitulo, tvDescripcion;
         ImageView ivImage1, ivImage2, ivImage3;
@@ -80,5 +92,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             ivImage2 = itemView.findViewById(R.id.ivImage2);
             ivImage3 = itemView.findViewById(R.id.ivImage3);
         }
+    }
+
+    // Interface para manejar el click en el post
+    public interface OnPostClickListener {
+        void onPostClick(Post post, int imageIndex);
     }
 }

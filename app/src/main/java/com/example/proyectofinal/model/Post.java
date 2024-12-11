@@ -1,86 +1,75 @@
 package com.example.proyectofinal.model;
 
+
+
+import com.parse.ParseClassName;
+import com.parse.ParseObject;
+
 import java.util.List;
 
-public class Post {
-    private String titulo, descripcion, categoria;
+@ParseClassName("Post")
+public class Post extends ParseObject {
+
+
+    // Definimos los campos de la clase Post
+    private String titulo;
+    private String descripcion;
     private int duracion;
+    private String categoria;
     private double presupuesto;
     private List<String> imagenes;
-    private User user;
 
-    public User getUser() {
-        return user;
+    // Constructor
+    public Post() {
+        // Esto es necesario para ParseObject
     }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Post() {}
-
-    public Post(String titulo, String descripcion, int duracion, String categoria, double presupuesto) {
-        this.titulo = titulo;
-        this.descripcion = descripcion;
-        this.duracion = duracion;
-        this.categoria = categoria;
-        this.presupuesto = presupuesto;
-    }
-
-    public Post(String titulo, String descripcion, int duracion, String categoria, double presupuesto, List<String> imagenes) {
-        this.titulo = titulo;
-        this.descripcion = descripcion;
-        this.duracion = duracion;
-        this.categoria = categoria;
-        this.presupuesto = presupuesto;
-        this.imagenes = imagenes;
-    }
-
+    // Getters y setters para cada campo
     public String getTitulo() {
-        return titulo;
+        return getString("titulo");
     }
 
     public void setTitulo(String titulo) {
-        this.titulo = titulo;
+        put("titulo", titulo);
     }
 
     public String getDescripcion() {
-        return descripcion;
+        return getString("descripcion");
     }
 
     public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
+        put("descripcion", descripcion);
     }
 
     public int getDuracion() {
-        return duracion;
+        return getInt("duracion");
     }
 
     public void setDuracion(int duracion) {
-        this.duracion = duracion;
+        put("duracion", duracion);
     }
 
     public String getCategoria() {
-        return categoria;
+        return getString("categoria");
     }
 
     public void setCategoria(String categoria) {
-        this.categoria = categoria;
+        put("categoria", categoria);
     }
 
     public double getPresupuesto() {
-        return presupuesto;
+        return getDouble("presupuesto");
     }
 
     public void setPresupuesto(double presupuesto) {
-        this.presupuesto = presupuesto;
+        put("presupuesto", presupuesto);
     }
 
     public List<String> getImagenes() {
-        return imagenes;
+        return getList("imagenes");
     }
 
     public void setImagenes(List<String> imagenes) {
-        this.imagenes = imagenes;
+        put("imagenes", imagenes);
     }
 }

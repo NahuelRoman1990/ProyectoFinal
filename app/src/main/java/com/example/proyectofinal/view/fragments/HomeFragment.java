@@ -1,5 +1,7 @@
 package com.example.proyectofinal.view.fragments;
 
+
+
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -13,18 +15,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-
 import com.example.proyectofinal.adapters.PostAdapter;
 import com.example.proyectofinal.databinding.FragmentHomeBinding;
 import com.example.proyectofinal.model.Post;
 import com.example.proyectofinal.view.MainActivity;
 import com.example.proyectofinal.view.PostActivity;
+import com.example.proyectofinal.view.PostDetailActivity;  // Asegúrate de tener esta importación
 import com.example.proyectofinal.viewmodel.PostViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment implements PostAdapter.OnPostClickListener { // Implementa el listener aquí
 
     private FragmentHomeBinding binding;
     private PostViewModel postViewModel;
@@ -59,7 +61,7 @@ public class HomeFragment extends Fragment {
         postViewModel = new ViewModelProvider(this).get(PostViewModel.class);
 
         postList = new ArrayList<>();
-        adapter = new PostAdapter(postList);
+        adapter = new PostAdapter(postList, this); // Pasa "this" como el listener
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerView.setAdapter(adapter);
 
@@ -86,12 +88,12 @@ public class HomeFragment extends Fragment {
             }
         });
 
-
         binding.fab.setOnClickListener(v -> {
             Intent intent = new Intent(getContext(), PostActivity.class);
             startActivity(intent);
         });
     }
+
 
     private void cargarPosts() {
         if (isLoading) return; // Evita solicitudes múltiples mientras se está cargando
@@ -104,6 +106,16 @@ public class HomeFragment extends Fragment {
             }
             isLoading = false; // Permite nuevas solicitudes
         });
+    }
+
+    @Override
+    public void onPostClick(Post post, int imageIndex) {
+
+
+        Intent intent = new Intent(getActivity(), PostDetailActivity.class);
+
+        startActivity(intent);
+
     }
 
 

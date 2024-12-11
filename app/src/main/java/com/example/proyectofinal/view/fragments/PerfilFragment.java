@@ -1,149 +1,181 @@
 package com.example.proyectofinal.view.fragments;
 
+
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
-
+import android.Manifest;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 
 import com.example.proyectofinal.R;
+import com.example.proyectofinal.databinding.FragmentPerfilBinding;
+import com.example.proyectofinal.util.ImageUtils;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
 import com.parse.ParseUser;
 import com.squareup.picasso.Picasso;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-
-import de.hdodenhof.circleimageview.CircleImageView;
+import java.io.IOException;
 
 public class PerfilFragment extends Fragment {
-
-    private static final int REQUEST_CODE_PICK_IMAGE = 100;
-
-    private TextView nameUserTextView, emailUserTextView, conteoPublicacionesTextView, instaTextView;
-    private CircleImageView circleImageView;
+    private FragmentPerfilBinding binding;
+    private ActivityResultLauncher<Intent> galleryLauncher;
 
     public PerfilFragment() {
-        // Constructor vacío requerido
+        // Constructor vacío
     }
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflar el layout
-        View rootView = inflater.inflate(R.layout.fragment_perfil, container, false);
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        binding = FragmentPerfilBinding.inflate(inflater, container, false);
+        setupMenu();
+        setupToolbar();
+        displayUserInfo();
+        fetchPostCount(); // Método para contar publicaciones
+        setupGalleryLauncher();
+        setupProfileImageClick();
 
-        // Inicializar vistas
-        nameUserTextView = rootView.findViewById(R.id.name_user);
-        emailUserTextView = rootView.findViewById(R.id.email_user);
-        conteoPublicacionesTextView = rootView.findViewById(R.id.conteoPublicaciones);
-        instaTextView = rootView.findViewById(R.id.insta);
-        circleImageView = rootView.findViewById(R.id.circleImageView);
-
-        // Listener para cambiar la imagen de perfil
-        circleImageView.setOnClickListener(v -> openGallery());
-
-        // Cargar la información del perfil desde Parse
-        loadUserProfile();
-
-        return rootView;
+        return binding.getRoot();
     }
 
-    private void openGallery() {
-        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, REQUEST_CODE_PICK_IMAGE);
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == REQUEST_CODE_PICK_IMAGE && resultCode == Activity.RESULT_OK && data != null) {
-            Uri selectedImageUri = data.getData();
-            if (selectedImageUri != null) {
-                // Actualizar la vista con la nueva imagen
-                circleImageView.setImageURI(selectedImageUri);
-
-                // Subir la imagen a Parse
-                uploadProfileImageToParse(selectedImageUri);
+    private void setupMenu() {
+        requireActivity().addMenuProvider(new MenuProvider() {
+            @Override
+            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+                menuInflater.inflate(R.menu.close_menu, menu);
             }
-        }
-    }
 
-    private void uploadProfileImageToParse(Uri imageUri) {
-        try {
-            byte[] imageBytes = getBytesFromUri(imageUri);
-            com.parse.ParseFile parseFile = new com.parse.ParseFile("profile.jpg", imageBytes);
-
-            ParseUser currentUser = ParseUser.getCurrentUser();
-            currentUser.put("profilePictureUrl", parseFile);
-            currentUser.saveInBackground(e -> {
-                if (e == null) {
-                    Toast.makeText(getContext(), "Imagen de perfil actualizada.", Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(getContext(), "Error al actualizar la imagen: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            @Override
+            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+                if (menuItem.getItemId() == R.id.itemClose) {
+                    Toast.makeText(requireContext(), "Cerrar sesión", Toast.LENGTH_SHORT).show();
+                    // Lógica para cerrar sesión
+                    return true;
                 }
-            });
-        } catch (Exception e) {
-            Toast.makeText(getContext(), "Error al cargar la imagen: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+                return false;
+            }
+        }, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
     }
 
-    private byte[] getBytesFromUri(Uri uri) throws Exception {
-        InputStream inputStream = getContext().getContentResolver().openInputStream(uri);
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int len;
-        while ((len = inputStream.read(buffer)) != -1) {
-            byteArrayOutputStream.write(buffer, 0, len);
-        }
-        return byteArrayOutputStream.toByteArray();
+    private void setupToolbar() {
+        ((AppCompatActivity) requireActivity()).setSupportActionBar(binding.getRoot().findViewById(R.id.tools_filtro));
     }
 
-    private void loadUserProfile() {
-        // Obtener el usuario actual desde Parse
+    private void displayUserInfo() {
         ParseUser currentUser = ParseUser.getCurrentUser();
         if (currentUser != null) {
-            // Actualizar las vistas con los datos del usuario
-            nameUserTextView.setText(currentUser.getString("name")); // Campo "name" en Parse
-            emailUserTextView.setText(currentUser.getEmail());       // Campo "email" estándar en Parse
-            instaTextView.setText(currentUser.getString("instagramHandle")); // Campo "instagramHandle" en Parse
+            binding.nameUser.setText(currentUser.getUsername());
+            binding.emailUser.setText(currentUser.getEmail());
+            binding.insta.setText(currentUser.getString("instagram"));
 
-            // Consultar y actualizar el conteo de publicaciones
+            String fotoUrl = currentUser.getString("foto_perfil");
+            if (fotoUrl != null) {
+                Picasso.get()
+                        .load(fotoUrl)
+                        .placeholder(R.drawable.ic_person)
+                        .error(R.drawable.ic_person)
+                        .into(binding.circleImageView);
+            } else {
+                binding.circleImageView.setImageResource(R.drawable.ic_person);
+            }
+        } else {
+            Toast.makeText(getContext(), "Usuario no logueado", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void fetchPostCount() {
+        ParseUser currentUser = ParseUser.getCurrentUser();
+        if (currentUser != null) {
             ParseQuery<ParseObject> query = ParseQuery.getQuery("Post");
             query.whereEqualTo("user", currentUser);
             query.countInBackground((count, e) -> {
                 if (e == null) {
-                    conteoPublicacionesTextView.setText(String.valueOf(count));
+                    binding.conteoPublicaciones.setText(String.valueOf(count));
                 } else {
-                    conteoPublicacionesTextView.setText("0");
+                    binding.conteoPublicaciones.setText("0");
                 }
             });
-
-            // Cargar la imagen de perfil con Picasso
-            String profilePictureUrl = currentUser.getString("profilePictureUrl");
-            if (profilePictureUrl != null && !profilePictureUrl.isEmpty()) {
-                Picasso.get().load(profilePictureUrl).into(circleImageView);
-            } else {
-                // Cargar una imagen predeterminada si no hay foto de perfil
-                circleImageView.setImageResource(R.drawable.ic_person);
-            }
         } else {
-            // Manejar el caso cuando no hay usuario
-            nameUserTextView.setText("Usuario no encontrado");
-            emailUserTextView.setText("");
-            conteoPublicacionesTextView.setText("0");
-            instaTextView.setText("");
-            circleImageView.setImageResource(R.drawable.ic_person);
+            binding.conteoPublicaciones.setText("0");
         }
     }
+
+    private void setupGalleryLauncher() {
+        galleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri imageUri = result.getData().getData();
+                        if (imageUri != null) {
+                            handleImageSelection(imageUri);
+                        }
+                    }
+                }
+        );
+    }
+
+    private void setupProfileImageClick() {
+        if (isAdded() && getContext() != null) {
+            binding.circleImageView.setOnClickListener(v -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    ImageUtils.pedirPermisos(requireActivity(),
+                            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
+                }
+                ImageUtils.openGallery(requireContext(), galleryLauncher);
+            });
+        }
+    }
+
+    private void handleImageSelection(Uri imageUri) {
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(
+                    requireActivity().getContentResolver(), imageUri);
+            binding.circleImageView.setImageBitmap(bitmap);
+
+            ImageUtils.subirImagenAParse(requireContext(), imageUri, new ImageUtils.ImageUploadCallback() {
+                @Override
+                public void onSuccess(String imageUrl) {
+                    ParseUser currentUser = ParseUser.getCurrentUser();
+                    if (currentUser != null) {
+                        currentUser.put("foto_perfil", imageUrl);
+                        currentUser.saveInBackground(e -> {
+                            if (e == null) {
+                                Toast.makeText(requireContext(), "Foto subida correctamente", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(requireContext(), "Error al guardar la URL: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    Toast.makeText(requireContext(), "Error al subir la foto: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (IOException e) {
+            Log.e("PerfilFragment", "Error al manejar la imagen: " + e.getMessage(), e);
+            Toast.makeText(requireContext(), "Error al cargar la imagen", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Aquí agregarás la lógica para ver los posts en slider más adelante.
 }

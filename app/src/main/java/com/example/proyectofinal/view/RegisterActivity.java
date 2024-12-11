@@ -2,10 +2,10 @@ package com.example.proyectofinal.view;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.proyectofinal.databinding.ActivityRegisterBinding;
@@ -23,12 +23,7 @@ public class RegisterActivity extends AppCompatActivity {
         binding = ActivityRegisterBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
         viewModel = new ViewModelProvider(this).get(RegisterViewModel.class);
-        viewModel.getRegisterResult().observe(this, new Observer<String>() {
-            @Override
-            public void onChanged(String result) {
-                showToast(result);
-            }
-        });
+        viewModel.getRegisterResult().observe(this, result -> showToast(result));
         manejarEventos();
     }
 
@@ -53,30 +48,35 @@ public class RegisterActivity extends AppCompatActivity {
         String email = binding.itEmail.getText().toString().trim();
         String pass = binding.itPassword.getText().toString().trim();
         String pass1 = binding.itPassword1.getText().toString().trim();
-
         // Validaciones de entrada
         if (!Validaciones.validarTexto(usuario)) {
             showToast("Usuario incorrecto");
             return;
         }
-
         if (!Validaciones.validarMail(email)) {
             showToast("El correo no es válido");
             return;
         }
-
         String passError = Validaciones.validarPass(pass, pass1);
         if (passError != null) {
             showToast(passError);
             return;
         }
 
-
-        User user = new User(usuario, email, pass);
+        User user = new User();
+        user.setRedSocial(email);
+        user.setUsername(usuario);
+        user.setPassword(pass);
+        Log.d("RegisterActivity", "Usuario registrado: " + usuario + ", Email: " + email+" pass: "+pass);
         viewModel.register(user);
 
         limpiarCampos();
+    }
 
+    private void showToast(String message) {
+        if (message != null) {
+            Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void limpiarCampos() {
@@ -86,7 +86,5 @@ public class RegisterActivity extends AppCompatActivity {
         binding.itPassword1.setText("");
     }
 
-    private void showToast(String message) {
-        Toast.makeText(RegisterActivity.this, message, Toast.LENGTH_LONG).show();
-    }
+
 }

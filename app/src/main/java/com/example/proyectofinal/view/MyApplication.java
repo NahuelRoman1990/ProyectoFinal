@@ -4,17 +4,21 @@ package com.example.proyectofinal.view;
 import android.app.Application;
 
 import com.example.proyectofinal.R;
-import com.example.proyectofinal.model.Post;
 import com.parse.Parse;
 import com.parse.ParseACL;
+
+
+import com.example.proyectofinal.model.Post; // Importa la clase Post
 import com.parse.ParseObject;
 
 public class MyApplication extends Application {
     @Override
-    public void onCreate(){
+    public void onCreate() {
         super.onCreate();
         Parse.enableLocalDatastore(this);
 
+        // Registrar la clase Post antes de inicializar Parse
+        ParseObject.registerSubclass(Post.class);
 
         Parse.initialize(new Parse.Configuration.Builder(this)
                 .applicationId(getString(R.string.back4app_app_id))

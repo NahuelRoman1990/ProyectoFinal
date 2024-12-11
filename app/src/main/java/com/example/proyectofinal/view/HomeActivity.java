@@ -87,4 +87,11 @@ public class HomeActivity extends AppCompatActivity {
         fragmentTransaction.replace(R.id.fragmentContainer, fragment);
         fragmentTransaction.commit();
     }
+
+    public void hideProgressBar() {
+        View progressBarLayout = findViewById(R.id.progress_layout);
+        if (progressBarLayout != null) {
+            progressBarLayout.setVisibility(View.GONE);
+        }
+    }
 }

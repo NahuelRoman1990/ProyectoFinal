@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
@@ -90,5 +91,18 @@ public class ImageUtils {
         void onSuccess(String imageUrl);
 
         void onFailure(Exception e);
+    }
+
+    public static String getRealPathFromURI(Context context, Uri contentUri) {
+        String[] projection = {MediaStore.Images.Media.DATA};
+        Cursor cursor = context.getContentResolver().query(contentUri, projection, null, null, null);
+        if (cursor != null) {
+            int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            String realPath = cursor.getString(columnIndex);
+            cursor.close();
+            return realPath;
+        }
+        return null;
     }
 }
